@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ce que ton appareil révèle (version complète)</title>
+<style>
+:root{--bg:#faf9f5;--card:#fff;--text:#1f1e1d;--muted:#6b6a66;--accent:#c96442;--border:#e5e2d8;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1f1e1d;--card:#2b2a28;--text:#f3f1ea;--muted:#a09e96;--border:#3d3b37}}
+:root[data-theme="dark"]{--bg:#1f1e1d;--card:#2b2a28;--text:#f3f1ea;--muted:#a09e96;--border:#3d3b37}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;line-height:1.45}
+main{max-width:700px;margin:0 auto;padding:28px 18px}
+h1{font-family:Georgia,serif;font-size:1.7rem;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 22px;font-size:.92rem}
+h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);margin:24px 0 8px}
+.badge{background:var(--accent);color:#fff;border-radius:99px;padding:1px 8px;font-size:.68rem;margin-left:6px;letter-spacing:0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.row{display:flex;justify-content:space-between;gap:16px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:0}
+.k{color:var(--muted);flex:0 0 38%}
+.v{text-align:right;word-break:break-word;flex:1}
+.btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:6px 12px;font-size:.82rem;cursor:pointer;font-family:system-ui,sans-serif}
+.btn:disabled{opacity:.5;cursor:default}
+</style>
+</head>
+<body>
+<main>
+<h1>Ce que ton appareil révèle</h1>
+<p class="sub">Tout est lu dans ton navigateur à l'ouverture de la page et rien n'est envoyé ailleurs. Les sections « Déduit » sont des conclusions tirées des données brutes. Certaines sections demandent une autorisation explicite à ton navigateur (bouton dédié) : rien n'est lu sans ça.</p>
+<div id="out"></div>
+</main>
+<script>
+(function(){
+var n=navigator,s=screen,ua=n.userAgent,secs=[],map={},out=document.getElementById('out');
+function sec(name,inf){if(!map[name]){map[name]={name:name,inf:!!inf,rows:[]};secs.push(map[name]);}return map[name];}
+function add(name,k,v,btn){var r=[k,btn?'':((v===undefined||v===null||v==='')?'Non disponible':String(v)),btn||null];sec(name).rows.push(r);return r;}
+function safe(f){try{return f();}catch(e){}}
+function mq(q){return safe(function(){return matchMedia(q).matches;})}
+function yn(b){return b?'Oui':'Non'}
+function render(){
+  out.textContent='';
+  secs.forEach(function(S){
+    var h=document.createElement('h2');h.textContent=S.name;
+    if(S.inf){var b=document.createElement('span');b.className='badge';b.textContent='Déduit';h.appendChild(b);}
+    var c=document.createElement('div');c.className='card';
+    S.rows.forEach(function(r){
+      var d=document.createElement('div');d.className='row';
+      var k=document.createElement('span');k.className='k';k.textContent=r[0];
+      var v=document.createElement('span');v.className='v';
+      if(r[2]&&r[2].btn){var bt=document.createElement('button');bt.className='btn';bt.textContent=r[2].label;bt.disabled=!!r[2].done;bt.onclick=r[2].onclick;v.appendChild(bt);}
+      else{v.textContent=r[1];}
+      d.appendChild(k);d.appendChild(v);c.appendChild(d);
+    });
+    out.appendChild(h);out.appendChild(c);
+  });
+}
+var D='Déductions',NV='Navigateur',EC='Écran',MA='Matériel',RS='Réseau et stockage',LH='Langue, lieu et heure',PR='Préférences',FN='Empreinte numérique',PM='Autorisations et périphériques',FE='Fonctions disponibles',PG='Cette visite',IR='Réseau local (WebRTC)',IA='Empreinte audio',AC='Ton activité sur cette page',MO='Capteurs de mouvement',GE='Position précise (GPS) — sur autorisation',MS='Écrans connectés — sur autorisation',LF='Polices installées — sur autorisation',AV='Fonctionnalités avancées — sur autorisation ou automatique';
+sec(D,true);[NV,EC,MA,RS,LH,PR,FN,IR,IA,MO,GE,MS,LF,AV,PM,FE,PG,AC].forEach(function(x){sec(x)});
+var crashInfo=null;
+try{
+
+/* Navigateur */
+add(NV,'User-Agent',ua);
+var pf=add(NV,'Plateforme',safe(function(){return n.userAgentData.platform})||n.platform);
+add(NV,'Marques (client hints)',safe(function(){return n.userAgentData.brands.map(function(b){return b.brand+' '+b.version}).join(', ')}));
+add(NV,'Éditeur / produit',n.vendor+' / '+n.product);
+add(NV,'Cookies activés',yn(n.cookieEnabled));
+add(NV,'Ne pas me suivre (DNT)',n.doNotTrack||window.doNotTrack);
+add(NV,'Signal GPC (vie privée)',n.globalPrivacyControl===undefined?undefined:yn(n.globalPrivacyControl));
+add(NV,'Contrôlé par un robot',yn(n.webdriver));
+add(NV,'Extensions (plugins)',safe(function(){return n.plugins.length+' (PDF : '+yn(n.pdfViewerEnabled)+')'}));
+
+/* Écran */
+add(EC,'Résolution écran',s.width+' × '+s.height);
+add(EC,'Zone utile',s.availWidth+' × '+s.availHeight);
+add(EC,'Fenêtre',innerWidth+' × '+innerHeight+' (extérieur '+outerWidth+' × '+outerHeight+')');
+add(EC,'Densité de pixels',devicePixelRatio);
+add(EC,'Résolution réelle',Math.round(s.width*devicePixelRatio)+' × '+Math.round(s.height*devicePixelRatio));
+add(EC,'Profondeur de couleur',s.colorDepth+' bits');
+add(EC,'Orientation',safe(function(){return s.orientation.type}));
+add(EC,'Gamme de couleurs',mq('(color-gamut: rec2020)')?'Rec.2020':mq('(color-gamut: p3)')?'Display P3':mq('(color-gamut: srgb)')?'sRGB':undefined);
+add(EC,'HDR',yn(mq('(dynamic-range: high)')));
+add(EC,'Fréquence d\'affichage estimée','Mesure en cours…');
+add(EC,'Écran tactile',n.maxTouchPoints>0?'Oui ('+n.maxTouchPoints+' points)':'Non');
+add(EC,'Mode d\'affichage',mq('(display-mode: standalone)')?'Application installée':'Navigateur');
+
+/* Matériel */
+add(MA,'Cœurs du processeur',n.hardwareConcurrency);
+add(MA,'Mémoire (arrondie)',n.deviceMemory?n.deviceMemory+' Go':undefined);
+add(MA,'Mémoire JS max',safe(function(){return Math.round(performance.memory.jsHeapSizeLimit/1048576)+' Mo'}));
+var gpuRow=add(MA,'Carte graphique',undefined),gpuV=add(MA,'Fabricant graphique',undefined);
+var batRow=add(MA,'Batterie','Lecture en cours…');
+var arch=add(MA,'Architecture',undefined),mod=add(MA,'Modèle (client hints)',undefined),osv=add(MA,'Version système (client hints)',undefined);
+var gl=safe(function(){var c=document.createElement('canvas');return c.getContext('webgl')||c.getContext('experimental-webgl')});
+var glHash='';
+if(gl){safe(function(){
+  var e=gl.getExtension('WEBGL_debug_renderer_info');
+  gpuRow[1]=e?gl.getParameter(e.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER);
+  gpuV[1]=e?gl.getParameter(e.UNMASKED_VENDOR_WEBGL):gl.getParameter(gl.VENDOR);
+  add(MA,'WebGL',gl.getParameter(gl.VERSION));
+  add(MA,'Texture max',gl.getParameter(gl.MAX_TEXTURE_SIZE));
+  glHash=gpuRow[1]+gpuV[1]+gl.getParameter(gl.MAX_TEXTURE_SIZE)+(gl.getSupportedExtensions()||[]).join();
+});}
+
+/* Réseau */
+var cn=n.connection||n.mozConnection||n.webkitConnection;
+add(RS,'En ligne',yn(n.onLine));
+add(RS,'Type de connexion',cn&&cn.effectiveType);
+add(RS,'Technologie',cn&&cn.type);
+add(RS,'Débit estimé',cn&&cn.downlink?cn.downlink+' Mb/s':undefined);
+add(RS,'Latence estimée',cn&&cn.rtt!==undefined?cn.rtt+' ms':undefined);
+add(RS,'Économie de données',cn&&typeof cn.saveData==='boolean'?yn(cn.saveData):undefined);
+add(RS,'Adresse IP','Non lisible ici (aucun appel réseau autorisé)');
+var stR=add(RS,'Stockage (quota / utilisé)','Lecture en cours…');
+add(RS,'localStorage',yn(safe(function(){localStorage.setItem('t','1');localStorage.removeItem('t');return true})));
+add(RS,'IndexedDB',yn(!!window.indexedDB));
+add(RS,'Service Workers',yn('serviceWorker' in n));
+
+/* Langue, lieu, heure */
+var tz=safe(function(){return Intl.DateTimeFormat().resolvedOptions().timeZone});
+var ro=safe(function(){return Intl.DateTimeFormat().resolvedOptions()})||{};
+var off=-new Date().getTimezoneOffset()/60;
+add(LH,'Langue principale',n.language);
+add(LH,'Langues préférées',safe(function(){return n.languages.join(', ')}));
+add(LH,'Fuseau horaire',tz);
+add(LH,'Décalage UTC','UTC'+(off>=0?'+':'')+off);
+add(LH,'Heure locale',new Date().toLocaleString('fr-FR'));
+add(LH,'Calendrier',ro.calendar);
+add(LH,'Système de chiffres',ro.numberingSystem);
+add(LH,'Format de nombre',(1234567.89).toLocaleString());
+add(LH,'Format 24 h',yn(!new Intl.DateTimeFormat(n.language,{hour:'numeric'}).format(new Date()).match(/AM|PM/i)));
+
+/* Préférences */
+add(PR,'Thème sombre',yn(mq('(prefers-color-scheme: dark)')));
+add(PR,'Animations réduites',yn(mq('(prefers-reduced-motion: reduce)')));
+add(PR,'Contraste élevé',yn(mq('(prefers-contrast: more)')));
+add(PR,'Couleurs forcées',yn(mq('(forced-colors: active)')));
+add(PR,'Couleurs inversées',yn(mq('(inverted-colors: inverted)')));
+add(PR,'Transparence réduite',yn(mq('(prefers-reduced-transparency: reduce)')));
+add(PR,'Pointeur principal',mq('(pointer: coarse)')?'Tactile':'Souris / trackpad');
+add(PR,'Survol possible',yn(mq('(hover: hover)')));
+
+/* Polices */
+var fonts=['Segoe UI','Calibri','Consolas','Cambria','Helvetica Neue','Menlo','Monaco','Avenir','Futura','Gill Sans','Roboto','Noto Sans','Ubuntu','DejaVu Sans','Cantarell','Arial','Verdana','Georgia','Times New Roman','Courier New','Impact','Comic Sans MS','Trebuchet MS','Tahoma'];
+var found=[];
+safe(function(){
+  var base=['monospace','serif','sans-serif'],t='mmmmmmmmmmlli',c=document.createElement('canvas').getContext('2d');
+  function w(f){c.font='72px '+f;return c.measureText(t).width}
+  var bw=base.map(function(b){return w(b)});
+  fonts.forEach(function(f){if(base.some(function(b,i){return w("'"+f+"',"+b)!==bw[i]}))found.push(f)});
+});
+add(FN,'Polices système détectées',found.length+' sur '+fonts.length+' testées'+(found.length?' : '+found.join(', '):''));
+
+/* Empreinte canvas + hash */
+var cvRow=add(FN,'Empreinte canvas','Calcul…'),idRow=add(FN,'Identifiant d\'empreinte global','Calcul…');
+add(FN,'Note','Cet identifiant, calculé à partir de tes réglages, permet à un site de te reconnaître sans cookie.');
+function sha(str){return crypto.subtle.digest('SHA-256',new TextEncoder().encode(str)).then(function(b){return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0')}).join('')})}
+var cvData='';
+safe(function(){var c=document.createElement('canvas');c.width=220;c.height=40;var x=c.getContext('2d');x.textBaseline='top';x.font='16px Arial';x.fillStyle='#f60';x.fillRect(10,5,80,25);x.fillStyle='#069';x.fillText('Claude \u{1F50D} fp 123',4,8);x.strokeStyle='rgba(102,204,0,.7)';x.arc(120,20,14,0,6.28);x.stroke();cvData=c.toDataURL()});
+var audioCtx=!!(window.AudioContext||window.webkitAudioContext);
+function finishFp(extra){
+  if(!crypto.subtle){cvRow[1]='Non disponible';idRow[1]='Non disponible';render();return}
+  sha(cvData).then(function(h){cvRow[1]=h.slice(0,16).toUpperCase();render()});
+  sha([ua,n.language,tz,s.width,s.height,devicePixelRatio,s.colorDepth,n.hardwareConcurrency,n.deviceMemory,n.maxTouchPoints,found.join(),glHash,cvData,extra].join('|')).then(function(h){idRow[1]=h.slice(0,24).toUpperCase();render()});
+}
+
+/* Réseau local via WebRTC */
+add(IR,'Note','Un site peut parfois découvrir ton IP locale (réseau Wi-Fi) même sans ta permission, via une technique WebRTC.');
+var iceRow=add(IR,'IP locale détectée','Recherche…');
+safe(function(){
+  var pc=new RTCPeerConnection({iceServers:[]}),found2=[];
+  pc.createDataChannel('');
+  pc.onicecandidate=function(e){
+    if(!e.candidate){iceRow[1]=found2.length?found2.join(', '):'Aucune trouvée (bloqué par ton navigateur)';render();pc.close();return}
+    var m=e.candidate.candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
+    if(m&&found2.indexOf(m[1])===-1)found2.push(m[1]);
+  };
+  pc.createOffer().then(function(o){return pc.setLocalDescription(o)});
+  setTimeout(function(){if(iceRow[1]==='Recherche…'){iceRow[1]=found2.length?found2.join(', '):'Aucune trouvée (bloqué par ton navigateur)';render()}},1200);
+});
+
+/* Empreinte audio */
+var audRow=add(IA,'Empreinte du circuit audio','Calcul…');
+add(IA,'Note','La façon dont ta carte son traite un signal généré varie légèrement d\'un appareil à l\'autre : ça sert aussi à te reconnaître.');
+safe(function(){
+  var Ctx=window.OfflineAudioContext||window.webkitOfflineAudioContext;
+  if(!Ctx){audRow[1]='Non disponible';return}
+  var ctx=new Ctx(1,5000,44100),osc=ctx.createOscillator(),comp=ctx.createDynamicsCompressor();
+  osc.type='triangle';osc.frequency.value=1000;
+  comp.threshold.value=-50;comp.knee.value=40;comp.ratio.value=12;comp.attack.value=0;comp.release.value=.25;
+  osc.connect(comp);comp.connect(ctx.destination);osc.start(0);
+  ctx.startRendering().then(function(buf){
+    var data=buf.getChannelData(0),sum=0;
+    for(var i=4500;i<4600;i++)sum+=Math.abs(data[i]);
+    audRow[1]=sum.toFixed(6);render();
+  }).catch(function(){audRow[1]='Non disponible';render()});
+});
+
+/* Capteurs de mouvement */
+var tiltRow,accRow;
+function attachMotion(){
+  window.addEventListener('deviceorientation',function(e){tiltRow[1]='alpha '+Math.round(e.alpha)+'°, beta '+Math.round(e.beta)+'°, gamma '+Math.round(e.gamma)+'°';render()});
+  window.addEventListener('devicemotion',function(e){var a=e.accelerationIncludingGravity||{};accRow[1]='x '+(a.x||0).toFixed(1)+', y '+(a.y||0).toFixed(1)+', z '+(a.z||0).toFixed(1);render()});
+}
+safe(function(){
+  if(window.DeviceOrientationEvent||window.DeviceMotionEvent){
+    tiltRow=add(MO,'Inclinaison (gyroscope)','En attente de mouvement…');
+    accRow=add(MO,'Accélération (accéléromètre)','En attente de mouvement…');
+    add(MO,'Note','Sur mobile, bouge ou incline ton téléphone : ces capteurs permettent de suivre l\'orientation sans aucune permission sur la plupart des Android.');
+    if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
+      var oriBtn=document.createElement('button');oriBtn.className='btn';oriBtn.textContent='Autoriser les capteurs (iOS)';
+      var oriRow=add(MO,'Autorisation iOS requise',undefined,{btn:true,label:'Autoriser les capteurs (iOS)',onclick:function(){
+        DeviceOrientationEvent.requestPermission().then(function(r){if(r==='granted'){attachMotion();oriRow[1]='Autorisé';oriRow[2]=null;render()}})
+      }});
+    } else { attachMotion(); }
+  } else {
+    add(MO,'Disponibilité','Non disponible sur cet appareil ou ce navigateur');
+  }
+});
+
+/* Position précise (GPS) */
+add(GE,'Note','Déclenche la popup native de ton navigateur. Si tu refuses, rien n\'est lu.');
+var geoRow=add(GE,'Résultat',undefined,{btn:true,label:'Autoriser et afficher ma position',onclick:function(){
+  if(!n.geolocation){geoRow[1]='Non disponible';geoRow[2]=null;render();return}
+  n.geolocation.getCurrentPosition(function(p){
+    geoRow[1]='lat '+p.coords.latitude.toFixed(5)+', lon '+p.coords.longitude.toFixed(5)+' (précision '+Math.round(p.coords.accuracy)+' m)';
+    geoRow[2]=null;render();
+  },function(err){geoRow[1]='Refusé ou indisponible ('+err.message+')';geoRow[2]=null;render()});
+}});
+
+/* Écrans connectés */
+add(MS,'Note','Montre tous les écrans branchés à ton ordinateur, pas seulement celui utilisé.');
+var msRow=add(MS,'Résultat',undefined,{btn:true,label:'Autoriser et lister les écrans',onclick:function(){
+  if(!window.getScreenDetails){msRow[1]='Non disponible sur ce navigateur';msRow[2]=null;render();return}
+  window.getScreenDetails().then(function(d){
+    msRow[1]=d.screens.length+' écran(s) : '+d.screens.map(function(sc){return sc.width+'×'+sc.height+(sc.isPrimary?' (principal)':'')}).join(' / ');
+    msRow[2]=null;render();
+  }).catch(function(){msRow[1]='Refusé';msRow[2]=null;render()});
+}});
+
+/* Polices installées en détail */
+add(LF,'Note','Liste réellement les polices installées sur ton système (plus précis que la détection indirecte plus haut).');
+var lfRow=add(LF,'Résultat',undefined,{btn:true,label:'Autoriser et lister les polices',onclick:function(){
+  if(!(window.queryLocalFonts)){lfRow[1]='Non disponible sur ce navigateur';lfRow[2]=null;render();return}
+  window.queryLocalFonts().then(function(fs){
+    var names=Array.from(new Set(fs.map(function(f){return f.family}))).sort();
+    lfRow[1]=names.length+' polices : '+names.slice(0,30).join(', ')+(names.length>30?'…':'');
+    lfRow[2]=null;render();
+  }).catch(function(){lfRow[1]='Refusé';lfRow[2]=null;render()});
+}});
+
+/* Fonctionnalités avancées */
+var relRow=add(AV,'Apps liées installées','Recherche automatique…');
+var presRow=add(AV,'Charge système (CPU)','Mesure automatique…');
+var idleRow2=add(AV,'Détection d\'inactivité système',undefined,{btn:true,label:'Autoriser et surveiller',onclick:function(){
+  if(!window.IdleDetector){idleRow2[1]='Non disponible';idleRow2[2]=null;render();return}
+  IdleDetector.requestPermission().then(function(p){
+    if(p!=='granted'){idleRow2[1]='Refusé';idleRow2[2]=null;render();return}
+    var d=new IdleDetector();d.addEventListener('change',function(){idleRow2[1]='Écran : '+d.screenState+', utilisateur : '+d.userState;render()});
+    d.start({threshold:60000}).then(function(){idleRow2[1]='Surveillance active';render()});
+  }).catch(function(){idleRow2[1]='Refusé ou indisponible';idleRow2[2]=null;render()});
+}});
+var wakeRow=add(AV,'Empêcher la mise en veille',undefined,{btn:true,label:'Activer l\'écran toujours allumé',onclick:function(){
+  if(!n.wakeLock){wakeRow[1]='Non disponible';wakeRow[2]=null;render();return}
+  n.wakeLock.request('screen').then(function(){wakeRow[1]='Activé pour cette page';wakeRow[2]=null;render()}).catch(function(){wakeRow[1]='Refusé';wakeRow[2]=null;render()});
+}});
+var vibRow=add(AV,'Faire vibrer l\'appareil',undefined,{btn:true,label:'Tester la vibration',onclick:function(){
+  vibRow[1]=n.vibrate&&n.vibrate([100,50,100])?'Vibration envoyée':'Non disponible';vibRow[2]=null;render();
+}});
+var kbRow=add(AV,'Disposition du clavier',undefined,{btn:true,label:'Lire la disposition clavier',onclick:function(){
+  if(!(n.keyboard&&n.keyboard.getLayoutMap)){kbRow[1]='Non disponible';kbRow[2]=null;render();return}
+  n.keyboard.getLayoutMap().then(function(m){
+    kbRow[1]='AZERTY/QWERTY : touche "KeyQ" = "'+(m.get('KeyQ')||'?')+'", "KeyA" = "'+(m.get('KeyA')||'?')+'"';kbRow[2]=null;render();
+  }).catch(function(){kbRow[1]='Refusé';kbRow[2]=null;render()});
+}});
+
+/* Autorisations / périphériques */
+var perms=['geolocation','notifications','camera','microphone','clipboard-read','persistent-storage','midi','accelerometer','gyroscope','magnetometer','background-sync','bluetooth','screen-wake-lock'];
+var fr={granted:'Accordée',denied:'Refusée',prompt:'À demander'};
+var permRows={};
+perms.forEach(function(p){permRows[p]=add(PM,'Permission : '+p,'…')});
+var devR=add(PM,'Caméras / micros / haut-parleurs','…');
+add(PM,'Voix de synthèse vocale',safe(function(){return speechSynthesis.getVoices().length}));
+add(PM,'Manettes connectées',safe(function(){return Array.from(n.getGamepads()).filter(Boolean).length}));
+
+/* Fonctions */
+[['WebAssembly',!!window.WebAssembly],['WebGPU',!!n.gpu],['WebRTC',!!window.RTCPeerConnection],['Web Audio',audioCtx],['Bluetooth',!!n.bluetooth],['USB',!!n.usb],['NFC',!!window.NDEFReader],['Vibration',!!n.vibrate],['Partage natif',!!n.share],['Presse-papiers',!!n.clipboard],['Géolocalisation',!!n.geolocation],['Capteurs de mouvement',!!window.DeviceMotionEvent],['Notifications',!!window.Notification],['Plein écran',!!document.fullscreenEnabled],['Écran toujours allumé',!!n.wakeLock],['Paiement (Payment Request)',!!window.PaymentRequest],['Identifiants (WebAuthn)',!!window.PublicKeyCredential]].forEach(function(f){add(FE,f[0],yn(f[1]))});
+
+/* Visite */
+var nav=safe(function(){return performance.getEntriesByType('navigation')[0]});
+add(PG,'URL',location.href);
+add(PG,'Page d\'origine (referrer)',document.referrer||'Aucune');
+add(PG,'Dans un cadre (iframe)',yn(window.top!==window.self));
+add(PG,'Type de chargement',nav&&nav.type);
+add(PG,'Temps de chargement',nav?Math.round(nav.duration)+' ms':undefined);
+add(PG,'Pages dans l\'historique',history.length);
+add(PG,'Onglet visible',yn(document.visibilityState==='visible'));
+add(PG,'Ouvert à',new Date().toLocaleTimeString('fr-FR'));
+
+/* Déductions */
+var os=/Windows NT 10/.test(ua)?'Windows 10/11':/Windows/.test(ua)?'Windows (ancien)':/Android ([\d.]+)/.test(ua)?'Android '+RegExp.$1:/(iPhone|iPad|iPod).*OS ([\d_]+)/.test(ua)?'iOS '+RegExp.$2.replace(/_/g,'.'):/Mac OS X ([\d_]+)/.test(ua)?'macOS (version masquée par le navigateur)':/CrOS/.test(ua)?'ChromeOS':/Linux/.test(ua)?'Linux':'Inconnu';
+var br=/Edg\/([\d.]+)/.test(ua)?'Edge '+RegExp.$1:/OPR\/([\d.]+)/.test(ua)?'Opera '+RegExp.$1:/Firefox\/([\d.]+)/.test(ua)?'Firefox '+RegExp.$1:/(Chrome|CriOS)\/([\d.]+)/.test(ua)?'Chrome '+RegExp.$2:/Version\/([\d.]+).*Safari/.test(ua)?'Safari '+RegExp.$1:'Inconnu';
+var eng=/Firefox/.test(ua)?'Gecko':/Chrome|CriOS|Edg|OPR/.test(ua)&&!/iPhone|iPad/.test(ua)?'Blink':'WebKit';
+var isIpad=/iPad/.test(ua)||(/Macintosh/.test(ua)&&n.maxTouchPoints>1);
+var type=isIpad?'Tablette':/iPhone|iPod/.test(ua)||/Mobi/.test(ua)?'Téléphone':/Android/.test(ua)?'Tablette':'Ordinateur';
+var dim=Math.min(s.width,s.height)+'x'+Math.max(s.width,s.height);
+var ip={'320x568':'iPhone SE 1 / 5s','375x667':'iPhone 6 à 8 / SE 2-3','375x812':'iPhone X / XS / 11 Pro / 12-13 mini','390x844':'iPhone 12 / 13 / 14 / 12-13 Pro','393x852':'iPhone 14 Pro / 15 / 15 Pro / 16','402x874':'iPhone 16 Pro / 17 Pro','414x896':'iPhone XR / XS Max / 11 / 11 Pro Max','428x926':'iPhone 12-14 Plus / Pro Max','430x932':'iPhone 14 Pro Max / 15 Plus / 15 Pro Max / 16 Plus','440x956':'iPhone 16 Pro Max'};
+var guess=/iPhone/.test(ua)?(ip[dim]||'iPhone (modèle non identifié)'):isIpad?'iPad':'Non déductible';
+var dModel=add(D,'Appareil probable',type+(/iPhone/.test(ua)?' : '+guess:''));
+add(D,'Système d\'exploitation',os);
+add(D,'Navigateur',br+' (moteur '+engCheck());
+function engCheck(){return eng+')'}
+var region=safe(function(){var r=(n.language.split('-')[1]||'').toUpperCase();return r?new Intl.DisplayNames(['fr'],{type:'region'}).of(r):undefined});
+add(D,'Pays de la langue',region);
+add(D,'Zone géographique probable',tz?tz.replace('_',' ').replace('/',' → '):undefined);
+var jan=new Date(2026,0,1).getTimezoneOffset(),jul=new Date(2026,6,1).getTimezoneOffset();
+add(D,'Heure d\'été dans ta région',jan!==jul?(new Date().getTimezoneOffset()<Math.max(jan,jul)?'Oui, actuellement active':'Oui, actuellement inactive'):'Pas de changement d\'heure');
+var fam=found.indexOf('Segoe UI')>-1?'Windows':found.indexOf('Helvetica Neue')>-1||found.indexOf('Menlo')>-1?'Apple (macOS/iOS)':found.indexOf('Roboto')>-1?'Android':found.indexOf('Ubuntu')>-1||found.indexOf('DejaVu Sans')>-1?'Linux':'Indéterminé';
+add(D,'Famille système (selon polices)',fam);
+var cores=n.hardwareConcurrency||0,mem=n.deviceMemory||0;
+add(D,'Niveau de performance',cores>=8&&(mem>=8||!mem)?'Haut de gamme':cores>=4?'Milieu de gamme':'Entrée de gamme');
+var priv=add(D,'Navigation privée',"Analyse…");
+add(D,'Usage probable',type==='Ordinateur'?'Poste fixe ou portable':'Appareil mobile, '+(cn&&cn.type==='cellular'?'sur réseau mobile':'probablement sur Wi-Fi ou données mobiles'));
+add(D,'Automatisation',n.webdriver?'Navigateur piloté par un robot':'Navigation humaine probable');
+
+/* Activité en direct */
+var mouseRow=add(AC,'Position du curseur','Bouge la souris…');
+var moveRow=add(AC,'Mouvements détectés',0);
+var keyRow=add(AC,'Dernière touche pressée','Aucune');
+var clipRow=add(AC,'Dernier copier/coller','Aucun');
+var focusRow=add(AC,'Onglet actif',yn(document.visibilityState==='visible'));
+var idleRow=add(AC,'Temps depuis la dernière action','0 s');
+add(AC,'Note','Un site peut enregistrer chaque mouvement, chaque touche et chaque copier-coller en temps réel, même sans champ de formulaire.');
+
+}catch(err){
+  crashInfo=err;
+  sec('Erreur').rows.push(['Un problème est survenu pendant la lecture',(err&&err.message)?err.message:String(err)]);
+  sec('Erreur').rows.push(['Ce qui précède ce message reste fiable','Ce qui suit n\'a pas pu être lu sur ton navigateur']);
+}
+render();
+
+/* Asynchrone : chaque bloc est indépendant, un souci dans l'un n'empêche jamais les autres */
+safe(function(){n.getBattery().then(function(b){batRow[1]=Math.round(b.level*100)+' %'+(b.charging?' (en charge)':'');render()}).catch(function(){batRow[1]='Non disponible';render()})})||(batRow&&(batRow[1]='Non disponible',render()));
+safe(function(){
+  if(n.storage&&n.storage.estimate){n.storage.estimate().then(function(e){stR[1]=Math.round(e.quota/1048576)+' Mo / '+Math.round(e.usage/1048576)+' Mo';priv[1]=e.quota<120*1048576?'Possible (quota de stockage très réduit)':'Peu probable';render()}).catch(function(){stR[1]='Non disponible';priv[1]='Indéterminé';render()})}
+  else{stR[1]='Non disponible';priv[1]='Indéterminé';render()}
+});
+safe(function(){
+  if(n.userAgentData&&n.userAgentData.getHighEntropyValues){n.userAgentData.getHighEntropyValues(['architecture','bitness','model','platformVersion','fullVersionList']).then(function(h){
+    arch[1]=(h.architecture||'?')+(h.bitness?' '+h.bitness+' bits':'');mod[1]=h.model||'Non fourni';
+    osv[1]=h.platformVersion||'Non fourni';
+    if(h.model){dModel[1]=type+' : '+h.model}
+    if(pf&&/Windows/.test(pf[1])&&h.platformVersion){var m=parseInt(h.platformVersion);osv[1]=h.platformVersion+(m>=13?' (Windows 11)':' (Windows 10)')}
+    render()}).catch(function(){render()})}
+});
+safe(function(){perms.forEach(function(p){safe(function(){n.permissions.query({name:p}).then(function(r){permRows[p][1]=fr[r.state]||r.state;render()}).catch(function(){permRows[p][1]='Non disponible';render()})});if(!n.permissions)permRows[p][1]='Non disponible'})});
+safe(function(){
+  if(n.mediaDevices&&n.mediaDevices.enumerateDevices){n.mediaDevices.enumerateDevices().then(function(l){var c={};l.forEach(function(d){c[d.kind]=(c[d.kind]||0)+1});devR[1]=(c.videoinput||0)+' caméra(s), '+(c.audioinput||0)+' micro(s), '+(c.audiooutput||0)+' sortie(s) audio';render()}).catch(function(){devR[1]='Non disponible';render()})}
+  else{devR[1]='Non disponible';render()}
+});
+/* Fréquence d'écran */
+safe(function(){
+  var hzRow=map[EC]&&map[EC].rows.filter(function(r){return r[0].indexOf('Fréquence')===0})[0],t0,cnt=0;
+  if(hzRow){function tick(t){if(!t0)t0=t;cnt++;if(t-t0<500){requestAnimationFrame(tick)}else{hzRow[1]='≈ '+Math.round(cnt*1000/(t-t0))+' Hz';render()}}requestAnimationFrame(tick);}
+});
+safe(function(){finishFp(mem+'|'+audioCtx)});
+
+/* Installations et apps liées */
+safe(function(){
+  if(n.getInstalledRelatedApps){n.getInstalledRelatedApps().then(function(apps){
+    relRow[1]=apps.length?apps.map(function(a){return a.platform+(a.id?(' : '+a.id):'')}).join(', '):'Aucune détectée';render();
+  }).catch(function(){relRow[1]='Non disponible';render()})}else{relRow[1]='Non disponible';render()}
+});
+
+/* Pression système (Compute Pressure API) */
+safe(function(){
+  if(window.PressureObserver){
+    var po=new PressureObserver(function(recs){presRow[1]=recs[recs.length-1].state;render()});
+    po.observe('cpu').catch(function(){presRow[1]='Non disponible';render()});
+  } else { presRow[1]='Non disponible';render() }
+});
+
+/* Écouteurs d'activité en direct */
+safe(function(){
+  var mvCount=0,lastAct=Date.now();
+  document.addEventListener('mousemove',function(e){mvCount++;lastAct=Date.now();mouseRow[1]='x:'+e.clientX+', y:'+e.clientY;moveRow[1]=mvCount;render()},{passive:true});
+  document.addEventListener('keydown',function(e){lastAct=Date.now();var k=e.key.length===1?'touche caractère (masquée)':e.key;keyRow[1]=k;render()});
+  document.addEventListener('copy',function(){lastAct=Date.now();clipRow[1]='Copie détectée';render()});
+  document.addEventListener('paste',function(){lastAct=Date.now();clipRow[1]='Collage détecté';render()});
+  document.addEventListener('touchstart',function(e){lastAct=Date.now();mouseRow[1]='Contact tactile détecté';render()},{passive:true});
+  document.addEventListener('visibilitychange',function(){focusRow[1]=yn(document.visibilityState==='visible');render()});
+  setInterval(function(){idleRow[1]=Math.round((Date.now()-lastAct)/1000)+' s';render()},1000);
+});
+})();
+</script>
+</body>
+</html>
